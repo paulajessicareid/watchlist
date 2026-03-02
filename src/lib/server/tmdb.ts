@@ -1,4 +1,4 @@
-import { TMDB_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export { posterUrl } from '$lib/tmdb';
 
@@ -17,7 +17,7 @@ export async function searchMovies(query: string): Promise<TMDBMovie[]> {
 		const url = `${TMDB_BASE}/search/movie?query=${encodeURIComponent(query.trim())}`;
 		const res = await fetch(url, {
 			headers: {
-				Authorization: `Bearer ${TMDB_API_KEY}`
+				Authorization: `Bearer ${env.TMDB_API_KEY}`
 			}
 		});
 
