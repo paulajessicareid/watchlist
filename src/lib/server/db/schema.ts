@@ -5,6 +5,7 @@ import { user } from './auth.schema';
 export const movie = pgTable('movie', {
 	id: serial('id').primaryKey(),
 	title: text('title').notNull(),
+	posterPath: text('poster_path'), // e.g. "/1E5baAaEse26fej7uHcjOgEE2t2.jpg"
 	userId: text('user_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),

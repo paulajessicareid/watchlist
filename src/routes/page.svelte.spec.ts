@@ -6,11 +6,14 @@ import Page from './+page.svelte';
 describe('/+page.svelte', () => {
 	it('should render add movie form', async () => {
 		render(Page, {
-			data: { movies: [] },
-			form: undefined
+			data: {
+				user: { id: 'test', name: 'Test', email: 'test@example.com', image: null },
+				movies: []
+			},
+			form: null
 		});
 
-		const input = page.getByPlaceholder('Add a movie…');
+		const input = page.getByPlaceholder('Search for a movie to add…');
 		await expect.element(input).toBeInTheDocument();
 	});
 });

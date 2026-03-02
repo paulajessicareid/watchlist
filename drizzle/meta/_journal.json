@@ -15,6 +15,13 @@
       "when": 1772467706120,
       "tag": "0001_lame_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772476980907,
+      "tag": "0002_famous_moira_mactaggert",
+      "breakpoints": true
     }
   ]
 }
