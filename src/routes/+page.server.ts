@@ -1,10 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { movie } from '$lib/server/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -34,10 +33,19 @@ export const actions: Actions = {
 		});
 		return { success: true };
 	},
-	signOut: async (event) => {
-		await auth.api.signOut({
-			headers: event.request.headers
-		});
-		return redirect(302, '/login');
-	}
+	removeMovie: async (event) => {
+		if (!event.locals.user) {
+			return redirect(302, '/login');
+		}
+		const formData = await event.request.formData();
+		const id = formData.get('id');
+		const parsedId = typeof id === 'string' ? parseInt(id, 10) : NaN;
+		if (!Number.isInteger(parsedId) || parsedId < 1) {
+			return { success: false, message: 'Invalid movie' };
+		}
+		await db
+			.delete(movie)
+			.where(and(eq(movie.id, parsedId), eq(movie.userId, event.locals.user.id)));
+		return { success: true, removedId: parsedId };
+	},
 };

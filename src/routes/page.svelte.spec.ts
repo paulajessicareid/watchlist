@@ -4,10 +4,13 @@ import { render } from 'vitest-browser-svelte';
 import Page from './+page.svelte';
 
 describe('/+page.svelte', () => {
-	it('should render h1', async () => {
-		render(Page);
+	it('should render add movie form', async () => {
+		render(Page, {
+			data: { movies: [] },
+			form: undefined
+		});
 
-		const heading = page.getByRole('heading', { level: 1 });
-		await expect.element(heading).toBeInTheDocument();
+		const input = page.getByPlaceholder('Add a movie…');
+		await expect.element(input).toBeInTheDocument();
 	});
 });
