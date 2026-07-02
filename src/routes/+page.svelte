@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { Plus, Trash2 } from '@lucide/svelte';
+	import { formatMovieMeta } from '$lib/movie';
 	import { posterUrl } from '$lib/tmdb';
 	import type { ActionData } from './$types';
 	import type { PageData } from './$types';
@@ -12,6 +13,13 @@
 		id: number;
 		title: string;
 		poster_path: string;
+		release_date?: string;
+	}
+
+	function searchResultYear(releaseDate: string | undefined): string | null {
+		if (!releaseDate) return null;
+		const year = releaseDate.slice(0, 4);
+		return /^\d{4}$/.test(year) ? year : null;
 	}
 
 	let searchQuery = $state('');
@@ -87,7 +95,7 @@
 								};
 							}}
 						>
-							<input type="hidden" name="title" value={result.title} />
+							<input type="hidden" name="tmdbId" value={result.id} />
 							<input type="hidden" name="posterPath" value={result.poster_path} />
 							<img
 								src={posterUrl(result.poster_path)}
@@ -96,7 +104,12 @@
 								height="69"
 								loading="lazy"
 							/>
-							<span class="search-result-title">{result.title}</span>
+							<span class="search-result-title">
+								{result.title}
+								{#if searchResultYear(result.release_date)}
+									<span class="search-result-year">({searchResultYear(result.release_date)})</span>
+								{/if}
+							</span>
 							<button type="submit" class="btn-primary">
 								<Plus size={18} />
 								Add
@@ -115,6 +128,7 @@
 
 <ul class="movie-list">
 	{#each data.movies as movie (movie.id)}
+		{@const meta = formatMovieMeta(movie)}
 		<li class="movie-item">
 			{#if movie.posterUrl}
 				<img
@@ -128,7 +142,12 @@
 			{/if}
 			<form method="post" action="?/removeMovie" use:enhance>
 				<input type="hidden" name="id" value={movie.id} />
-				<span class="movie-title">{movie.title}</span>
+				<div class="movie-info">
+					<span class="movie-title">{movie.title}</span>
+					{#if meta}
+						<span class="movie-meta">{meta}</span>
+					{/if}
+				</div>
 				<button type="submit" class="btn-icon" aria-label="Remove {movie.title}">
 					<Trash2 size={18} />
 				</button>

@@ -238,10 +238,22 @@ button.btn-icon {
 	border-radius: var(--radius);
 }
 
-.movie-item .movie-title {
+.movie-item .movie-info {
 	flex: 1;
 	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.movie-item .movie-title {
 	font-size: 1rem;
+}
+
+.movie-item .movie-meta {
+	font-size: 0.8125rem;
+	color: var(--color-text-muted);
+	line-height: 1.4;
 }
 
 .movie-item button {
@@ -291,6 +303,11 @@ button.btn-icon {
 	flex: 1;
 	min-width: 0;
 	font-size: 1rem;
+}
+
+.search-result-year {
+	color: var(--color-text-muted);
+	font-weight: normal;
 }
 
 .search-result button {
