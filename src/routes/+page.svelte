@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { Plus, Trash2 } from '@lucide/svelte';
+	import { Plus, Star, Trash2 } from '@lucide/svelte';
 	import { formatMovieMeta } from '$lib/movie';
 	import { posterUrl } from '$lib/tmdb';
 	import type { ActionData } from './$types';
@@ -126,6 +126,27 @@
 	<p class="error">{form?.message ?? ''}</p>
 {/if}
 
+{#if data.movies.length > 0}
+	<form method="get" class="genre-filter">
+		<label for="genre">Genre</label>
+		<select
+			id="genre"
+			name="genre"
+			value={data.selectedGenre}
+			onchange={(e) => e.currentTarget.form?.requestSubmit()}
+		>
+			<option value="">All genres</option>
+			{#each data.genres as genreName (genreName)}
+				<option value={genreName}>{genreName}</option>
+			{/each}
+		</select>
+	</form>
+{/if}
+
+{#if data.movies.length === 0 && data.selectedGenre}
+	<p class="filter-status">No movies in your watchlist match this genre.</p>
+{/if}
+
 <ul class="movie-list">
 	{#each data.movies as movie (movie.id)}
 		{@const meta = formatMovieMeta(movie)}
@@ -134,13 +155,13 @@
 				<img
 					src={movie.posterUrl}
 					alt=""
-					width="46"
-					height="69"
+					width="42"
+					height="63"
 					loading="lazy"
 					class="movie-poster"
 				/>
 			{/if}
-			<form method="post" action="?/removeMovie" use:enhance>
+			<form method="post" use:enhance>
 				<input type="hidden" name="id" value={movie.id} />
 				<div class="movie-info">
 					<span class="movie-title">{movie.title}</span>
@@ -148,9 +169,27 @@
 						<span class="movie-meta">{meta}</span>
 					{/if}
 				</div>
-				<button type="submit" class="btn-icon" aria-label="Remove {movie.title}">
-					<Trash2 size={18} />
-				</button>
+				<div class="movie-actions">
+					<button
+						type="submit"
+						formaction="?/toggleFavourite"
+						class="btn-icon star-btn"
+						class:star-active={movie.isFavourite}
+						aria-label={movie.isFavourite
+							? `Remove favourite from ${movie.title}`
+							: `Favourite ${movie.title}`}
+					>
+						<Star size={18} fill={movie.isFavourite ? 'currentColor' : 'none'} />
+					</button>
+					<button
+						type="submit"
+						formaction="?/removeMovie"
+						class="btn-icon"
+						aria-label="Remove {movie.title}"
+					>
+						<Trash2 size={18} />
+					</button>
+				</div>
 			</form>
 		</li>
 	{/each}

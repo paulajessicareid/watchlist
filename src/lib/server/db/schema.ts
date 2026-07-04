@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+	boolean,
 	integer,
 	pgTable,
 	primaryKey,
@@ -18,6 +19,8 @@ export const movie = pgTable(
 		posterPath: text('poster_path'),
 		tmdbId: integer('tmdb_id'),
 		releaseYear: integer('release_year'),
+		isFavourite: boolean('is_favourite').notNull().default(false),
+		favouritedAt: timestamp('favourited_at'),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),

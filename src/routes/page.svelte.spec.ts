@@ -8,7 +8,9 @@ describe('/+page.svelte', () => {
 		render(Page, {
 			data: {
 				user: { id: 'test', name: 'Test', email: 'test@example.com', image: null },
-				movies: []
+				movies: [],
+				genres: [],
+				selectedGenre: ''
 			},
 			form: null
 		});

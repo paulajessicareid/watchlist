@@ -29,6 +29,13 @@
       "when": 1783015692918,
       "tag": "0003_legal_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783163459416,
+      "tag": "0004_motionless_greymalkin",
+      "breakpoints": true
     }
   ]
 }

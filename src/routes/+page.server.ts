@@ -10,8 +10,9 @@ import {
 	movieDirector,
 	movieGenre
 } from '$lib/server/db/schema';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, exists, inArray, sql } from 'drizzle-orm';
 import { fetchMovieDetails, posterUrl, searchMovies } from '$lib/server/tmdb';
+import { isMovieGenre, MOVIE_GENRES } from '$lib/genres';
 
 const BACKFILL_CONCURRENCY = 5;
 
@@ -21,6 +22,7 @@ type MovieRow = {
 	posterPath: string | null;
 	tmdbId: number | null;
 	releaseYear: number | null;
+	isFavourite: boolean;
 	createdAt: Date;
 };
 
@@ -78,8 +80,40 @@ function toMovieListItem(
 		releaseYear: row.releaseYear,
 		directors: meta.directors,
 		genres: meta.genres,
+		isFavourite: row.isFavourite,
 		createdAt: row.createdAt
 	};
+}
+
+function movieBelongsToGenre(selectedGenre: string) {
+	return exists(
+		db
+			.select({ one: sql`1` })
+			.from(movieGenre)
+			.innerJoin(genre, eq(movieGenre.genreId, genre.id))
+			.where(and(eq(movieGenre.movieId, movie.id), eq(genre.name, selectedGenre)))
+	);
+}
+
+async function loadUserMovies(userId: string, selectedGenre: string): Promise<MovieRow[]> {
+	const conditions = [eq(movie.userId, userId)];
+	if (selectedGenre) {
+		conditions.push(movieBelongsToGenre(selectedGenre));
+	}
+
+	return db
+		.select({
+			id: movie.id,
+			title: movie.title,
+			posterPath: movie.posterPath,
+			tmdbId: movie.tmdbId,
+			releaseYear: movie.releaseYear,
+			isFavourite: movie.isFavourite,
+			createdAt: movie.createdAt
+		})
+		.from(movie)
+		.where(and(...conditions))
+		.orderBy(desc(movie.isFavourite), desc(movie.favouritedAt), desc(movie.createdAt));
 }
 
 async function backfillMovies(movies: MovieRow[]): Promise<void> {
@@ -117,38 +151,29 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/login');
 	}
 
-	let rows = await db
-		.select({
-			id: movie.id,
-			title: movie.title,
-			posterPath: movie.posterPath,
-			tmdbId: movie.tmdbId,
-			releaseYear: movie.releaseYear,
-			createdAt: movie.createdAt
-		})
-		.from(movie)
-		.where(eq(movie.userId, event.locals.user.id))
-		.orderBy(desc(movie.createdAt));
+	const userId = event.locals.user.id;
+	const selectedGenre = event.url.searchParams.get('genre')?.trim() ?? '';
 
-	await backfillMovies(rows);
+	if (selectedGenre && !isMovieGenre(selectedGenre)) {
+		return redirect(302, '/');
+	}
 
-	rows = await db
-		.select({
-			id: movie.id,
-			title: movie.title,
-			posterPath: movie.posterPath,
-			tmdbId: movie.tmdbId,
-			releaseYear: movie.releaseYear,
-			createdAt: movie.createdAt
-		})
-		.from(movie)
-		.where(eq(movie.userId, event.locals.user.id))
-		.orderBy(desc(movie.createdAt));
+	let rows = await loadUserMovies(userId, selectedGenre);
+	const allRows = await loadUserMovies(userId, '');
+
+	await backfillMovies(allRows);
+
+	rows = await loadUserMovies(userId, selectedGenre);
 
 	const metadata = await loadMovieMetadata(rows.map((m) => m.id));
 	const movies = rows.map((row) => toMovieListItem(row, metadata.get(row.id)!));
 
-	return { user: event.locals.user, movies };
+	return {
+		user: event.locals.user,
+		movies,
+		genres: [...MOVIE_GENRES],
+		selectedGenre
+	};
 };
 
 export const actions: Actions = {
@@ -212,5 +237,40 @@ export const actions: Actions = {
 			.delete(movie)
 			.where(and(eq(movie.id, parsedId), eq(movie.userId, event.locals.user.id)));
 		return { success: true, removedId: parsedId };
+	},
+	toggleFavourite: async (event) => {
+		if (!event.locals.user) {
+			return redirect(302, '/login');
+		}
+		const formData = await event.request.formData();
+		const id = formData.get('id');
+		const parsedId = typeof id === 'string' ? parseInt(id, 10) : NaN;
+		if (!Number.isInteger(parsedId) || parsedId < 1) {
+			return { success: false, message: 'Invalid movie' };
+		}
+
+		const [existing] = await db
+			.select({ isFavourite: movie.isFavourite })
+			.from(movie)
+			.where(and(eq(movie.id, parsedId), eq(movie.userId, event.locals.user.id)))
+			.limit(1);
+
+		if (!existing) {
+			return { success: false, message: 'Movie not found' };
+		}
+
+		if (existing.isFavourite) {
+			await db
+				.update(movie)
+				.set({ isFavourite: false, favouritedAt: null })
+				.where(and(eq(movie.id, parsedId), eq(movie.userId, event.locals.user.id)));
+		} else {
+			await db
+				.update(movie)
+				.set({ isFavourite: true, favouritedAt: new Date() })
+				.where(and(eq(movie.id, parsedId), eq(movie.userId, event.locals.user.id)));
+		}
+
+		return { success: true };
 	}
 };

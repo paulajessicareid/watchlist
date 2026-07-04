@@ -5,6 +5,7 @@ export interface MovieListItem {
 	releaseYear: number | null;
 	directors: string[];
 	genres: string[];
+	isFavourite: boolean;
 	createdAt: Date;
 }
 
@@ -13,7 +14,8 @@ export const MOVIE_SORT_FIELDS = [
 	'releaseYear',
 	'director',
 	'genre',
-	'title'
+	'title',
+	'isFavourite'
 ] as const;
 
 export type MovieSortField = (typeof MOVIE_SORT_FIELDS)[number];
