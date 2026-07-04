@@ -172,7 +172,8 @@ export const load: PageServerLoad = async (event) => {
 		user: event.locals.user,
 		movies,
 		genres: [...MOVIE_GENRES],
-		selectedGenre
+		selectedGenre,
+		hasMovies: allRows.length > 0
 	};
 };
 

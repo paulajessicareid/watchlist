@@ -10,7 +10,8 @@ describe('/+page.svelte', () => {
 				user: { id: 'test', name: 'Test', email: 'test@example.com', image: null },
 				movies: [],
 				genres: [],
-				selectedGenre: ''
+				selectedGenre: '',
+				hasMovies: false
 			},
 			form: null
 		});

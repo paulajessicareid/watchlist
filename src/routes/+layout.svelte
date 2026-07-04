@@ -1,20 +1,22 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { Film, LogOut, User } from '@lucide/svelte';
+	import { LogOut, User } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 
 	let { data, children } = $props();
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<title>FILMHEADS</title>
+	<meta name="description" content="Track the films you want to watch." />
+	<link rel="icon" href={favicon} type="image/svg+xml" />
 </svelte:head>
 
 <header class="header container">
 	<a href="/" class="header-title">
-		<Film size={24} class="icon" />
-		Watchlist
+		<img src={favicon} alt="" class="header-logo" width="32" height="32" />
+		<span class="header-wordmark">Filmheads</span>
 	</a>
 	{#if data.user}
 		<div class="header-user">

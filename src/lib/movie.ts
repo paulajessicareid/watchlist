@@ -33,3 +33,16 @@ export function formatMovieMeta(movie: Pick<MovieListItem, 'releaseYear' | 'dire
 	}
 	return parts.join(' · ');
 }
+
+export function formatMovieCardMeta(
+	movie: Pick<MovieListItem, 'releaseYear' | 'directors'>
+): string {
+	const parts: string[] = [];
+	if (movie.releaseYear != null) {
+		parts.push(String(movie.releaseYear));
+	}
+	if (movie.directors.length > 0) {
+		parts.push(movie.directors.join(', '));
+	}
+	return parts.join(' · ');
+}

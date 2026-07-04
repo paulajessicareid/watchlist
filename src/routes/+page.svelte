@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { Plus, Star, Trash2 } from '@lucide/svelte';
-	import { formatMovieMeta } from '$lib/movie';
+	import { LayoutGrid, List, Plus, Star, Trash2 } from '@lucide/svelte';
+	import { formatMovieCardMeta, formatMovieMeta } from '$lib/movie';
 	import { posterUrl } from '$lib/tmdb';
 	import type { ActionData } from './$types';
 	import type { PageData } from './$types';
@@ -57,6 +57,24 @@
 		searchQuery = '';
 		searchResults = [];
 	}
+
+	type ViewMode = 'list' | 'cards';
+
+	let viewMode = $state<ViewMode>('list');
+	let persistViewMode = $state(false);
+
+	onMount(() => {
+		const saved = localStorage.getItem('watchlist-view');
+		if (saved === 'list' || saved === 'cards') {
+			viewMode = saved;
+		}
+		persistViewMode = true;
+	});
+
+	$effect(() => {
+		if (!persistViewMode || typeof localStorage === 'undefined') return;
+		localStorage.setItem('watchlist-view', viewMode);
+	});
 </script>
 
 <div class="add-movie-form">
@@ -126,71 +144,100 @@
 	<p class="error">{form?.message ?? ''}</p>
 {/if}
 
-{#if data.movies.length > 0}
-	<form method="get" class="genre-filter">
-		<label for="genre">Genre</label>
-		<select
-			id="genre"
-			name="genre"
-			value={data.selectedGenre}
-			onchange={(e) => e.currentTarget.form?.requestSubmit()}
-		>
-			<option value="">All genres</option>
-			{#each data.genres as genreName (genreName)}
-				<option value={genreName}>{genreName}</option>
-			{/each}
-		</select>
-	</form>
+{#if data.hasMovies || data.selectedGenre || data.movies.length > 0}
+	<div class="watchlist-toolbar">
+		<form method="get" class="genre-filter">
+			<label for="genre">Genre</label>
+			<select
+				id="genre"
+				name="genre"
+				value={data.selectedGenre}
+				onchange={(e) => e.currentTarget.form?.requestSubmit()}
+			>
+				<option value="">All genres</option>
+				{#each data.genres as genreName (genreName)}
+					<option value={genreName}>{genreName}</option>
+				{/each}
+			</select>
+		</form>
+		{#if data.movies.length > 0}
+			<div class="view-toggle" role="group" aria-label="View mode">
+				<button
+					type="button"
+					class="view-toggle-btn"
+					class:view-toggle-btn-active={viewMode === 'list'}
+					aria-pressed={viewMode === 'list'}
+					aria-label="List view"
+					onclick={() => (viewMode = 'list')}
+				>
+					<List size={18} />
+				</button>
+				<button
+					type="button"
+					class="view-toggle-btn"
+					class:view-toggle-btn-active={viewMode === 'cards'}
+					aria-pressed={viewMode === 'cards'}
+					aria-label="Card view"
+					onclick={() => (viewMode = 'cards')}
+				>
+					<LayoutGrid size={18} />
+				</button>
+			</div>
+		{/if}
+	</div>
 {/if}
 
-{#if data.movies.length === 0 && data.selectedGenre}
+{#if data.movies.length === 0 && !data.selectedGenre}
+	<p class="empty-state">Let's get started! Try adding your first movie.</p>
+{:else if data.movies.length === 0 && data.selectedGenre}
 	<p class="filter-status">No movies in your watchlist match this genre.</p>
+{:else}
+	<ul class="movie-list" class:movie-list--cards={viewMode === 'cards'}>
+		{#each data.movies as movie (movie.id)}
+			{@const meta =
+				viewMode === 'cards' ? formatMovieCardMeta(movie) : formatMovieMeta(movie)}
+			<li class="movie-item" class:movie-item--card={viewMode === 'cards'}>
+				{#if movie.posterUrl}
+					<img
+						src={movie.posterUrl}
+						alt=""
+						width="42"
+						height="63"
+						loading="lazy"
+						class="movie-poster"
+					/>
+				{/if}
+				<form method="post" use:enhance>
+					<input type="hidden" name="id" value={movie.id} />
+					<div class="movie-info">
+						<span class="movie-title">{movie.title}</span>
+						{#if meta}
+							<span class="movie-meta">{meta}</span>
+						{/if}
+					</div>
+					<div class="movie-actions">
+						<button
+							type="submit"
+							formaction="?/toggleFavourite"
+							class="btn-icon star-btn"
+							class:star-active={movie.isFavourite}
+							aria-label={movie.isFavourite
+								? `Remove favourite from ${movie.title}`
+								: `Favourite ${movie.title}`}
+						>
+							<Star size={18} fill={movie.isFavourite ? 'currentColor' : 'none'} />
+						</button>
+						<button
+							type="submit"
+							formaction="?/removeMovie"
+							class="btn-icon"
+							aria-label="Remove {movie.title}"
+						>
+							<Trash2 size={18} />
+						</button>
+					</div>
+				</form>
+			</li>
+		{/each}
+	</ul>
 {/if}
-
-<ul class="movie-list">
-	{#each data.movies as movie (movie.id)}
-		{@const meta = formatMovieMeta(movie)}
-		<li class="movie-item">
-			{#if movie.posterUrl}
-				<img
-					src={movie.posterUrl}
-					alt=""
-					width="42"
-					height="63"
-					loading="lazy"
-					class="movie-poster"
-				/>
-			{/if}
-			<form method="post" use:enhance>
-				<input type="hidden" name="id" value={movie.id} />
-				<div class="movie-info">
-					<span class="movie-title">{movie.title}</span>
-					{#if meta}
-						<span class="movie-meta">{meta}</span>
-					{/if}
-				</div>
-				<div class="movie-actions">
-					<button
-						type="submit"
-						formaction="?/toggleFavourite"
-						class="btn-icon star-btn"
-						class:star-active={movie.isFavourite}
-						aria-label={movie.isFavourite
-							? `Remove favourite from ${movie.title}`
-							: `Favourite ${movie.title}`}
-					>
-						<Star size={18} fill={movie.isFavourite ? 'currentColor' : 'none'} />
-					</button>
-					<button
-						type="submit"
-						formaction="?/removeMovie"
-						class="btn-icon"
-						aria-label="Remove {movie.title}"
-					>
-						<Trash2 size={18} />
-					</button>
-				</div>
-			</form>
-		</li>
-	{/each}
-</ul>
